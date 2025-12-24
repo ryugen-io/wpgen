@@ -92,7 +92,7 @@ def apply_noise(image, intensity=0.05):
 def composite_logo(background, logo_path, position, scale=1.0):
     try:
         logo = Image.open(logo_path).convert("RGBA")
-    except Exception as e:
+    except Exception:
         # Silently fail - TUI handles errors
         return background
 

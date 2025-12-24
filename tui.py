@@ -14,10 +14,7 @@ from textual.widgets import (
 )
 from textual.validation import Regex
 import os
-import sys
 import subprocess
-import contextlib
-import io
 import generator
 import ai_generator
 import kitchn_bridge
@@ -44,12 +41,12 @@ class WallpaperGenApp(App):
         # Save original fds
         stdout_fd = os.dup(1)
         stderr_fd = os.dup(2)
-        
+
         # Redirect to devnull
         devnull = os.open(os.devnull, os.O_WRONLY)
         os.dup2(devnull, 1)
         os.dup2(devnull, 2)
-        
+
         try:
             result = func(*args, **kwargs)
         finally:
@@ -59,7 +56,7 @@ class WallpaperGenApp(App):
             os.close(devnull)
             os.close(stdout_fd)
             os.close(stderr_fd)
-        
+
         return result
 
     CSS = """
@@ -282,16 +279,14 @@ class WallpaperGenApp(App):
             # Works natively on Wayland
             # Suppress all output to prevent TUI interference
             result = subprocess.run(
-                ["hyprpicker", "-a"],
-                capture_output=True,
-                text=True
+                ["hyprpicker", "-a"], capture_output=True, text=True
             )
-            
+
             if result.returncode != 0:
                 return  # User cancelled
-            
+
             hex_color = result.stdout.strip()
-            
+
             # Update UI safely
             def update_input():
                 self.query_one(f"#{target_input_id}").value = hex_color
