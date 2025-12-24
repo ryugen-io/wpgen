@@ -1,4 +1,4 @@
-# WP-Gen-PyJS
+# WP-Gen-Py
 
 A fancy, modern wallpaper generator with a Terminal User Interface (TUI).
 
