@@ -125,14 +125,6 @@ def log_tui_theme_ok():
     get_bridge().log_preset("tui_theme_ok")
 
 
-def log_tui_ai_start(prompt):
-    get_bridge().log_preset("tui_ai_start", prompt)
-
-
-def log_tui_ai_ok():
-    get_bridge().log_preset("tui_ai_ok")
-
-
 def log_tui_pick_ok(color):
     get_bridge().log_preset("tui_pick_ok", color)
 

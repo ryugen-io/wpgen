@@ -8,19 +8,17 @@ from textual.widgets import (
     RadioButton,
     RadioSet,
     Switch,
-    Static,
     Select,
     Log,
 )
 from textual.validation import Regex
+from textual.theme import Theme
 import os
 import subprocess
-import generator
-import ai_generator
-import kitchn_bridge
+from wpgen import generator, kitchn_bridge
 
 try:
-    import tui_theme_config
+    from wpgen import tui_theme_config
 
     HAS_THEME = True
 except ImportError:
@@ -158,32 +156,8 @@ class WallpaperGenApp(App):
     TITLE = "wpgen"
     SUB_TITLE = "Fancy Wallpaper Generator"
 
-    def get_theme_variable_defaults(self) -> dict[str, str]:
-        """Override theme variables with Kitchn theme if available."""
-        if HAS_THEME:
-            # Return variables with $ prefix as required by Textual
-            return {f"${key}": value for key, value in tui_theme_config.CSS_VARIABLES.items()}
-        return {}
-
     def compose(self) -> ComposeResult:
         with Container(id="sidebar"):
-            # AI Toggle
-            with Horizontal(classes="toggle-row"):
-                yield Label("Enable AI: ", classes="section-title")
-                yield Switch(value=False, id="ai_toggle")
-
-            # AI Section
-            with Container(id="ai_section"):
-                yield Label("Prompt", classes="section-title")
-                yield Input(
-                    placeholder="Describe your vibe (e.g. 'Cyberpunk City')",
-                    id="ai_prompt",
-                )
-                yield Button(
-                    "Magic Generate (Colors + Image)", variant="warning", id="ai_btn"
-                )
-                yield Static(classes="separator")
-
             # Manual Section
             yield Label("Mode", classes="section-title")
             with RadioSet(id="mode_select"):
@@ -334,8 +308,28 @@ class WallpaperGenApp(App):
         self.query_one("#status_log").write("Ready to generate...")
         self._suppress_fd_output(kitchn_bridge.log_tui_start)
 
-        # Theme is applied via get_theme_variable_defaults
+        # Register and apply Kitchn theme if available
         if HAS_THEME:
+            kitchn_theme = Theme(
+                name="kitchn",
+                primary=tui_theme_config.PRIMARY,
+                secondary=tui_theme_config.SECONDARY,
+                accent=tui_theme_config.ACCENT,
+                foreground=tui_theme_config.FG,
+                background=tui_theme_config.BG,
+                surface=tui_theme_config.SURFACE,
+                panel=tui_theme_config.PANEL,
+                success=tui_theme_config.SUCCESS,
+                warning=tui_theme_config.WARNING,
+                error=tui_theme_config.ERROR,
+                dark=True,
+                variables={
+                    "text": tui_theme_config.TEXT,
+                    "info": tui_theme_config.INFO,
+                }
+            )
+            self.register_theme(kitchn_theme)
+            self.theme = "kitchn"
             self._suppress_fd_output(kitchn_bridge.log_tui_theme_ok)
 
         self._suppress_fd_output(kitchn_bridge.log_tui_ok)
@@ -348,13 +342,9 @@ class WallpaperGenApp(App):
         self.query_one("#mesh_options").display = False
         # Initial state for logo
         self.query_one("#logo_section").display = False
-        # Initial state for AI (disabled by default)
-        self.query_one("#ai_section").display = False
 
     def on_switch_changed(self, event: Switch.Changed) -> None:
-        if event.switch.id == "ai_toggle":
-            self.query_one("#ai_section").display = event.value
-        elif event.switch.id == "logo_switch":
+        if event.switch.id == "logo_switch":
             self.query_one("#logo_section").display = event.value
 
     def on_radio_set_changed(self, event: RadioSet.Changed) -> None:
@@ -413,8 +403,6 @@ class WallpaperGenApp(App):
             bid = event.button.id
             if bid == "gen_btn":
                 self.generate()
-            elif bid == "ai_btn":
-                self.generate_ai()
             elif bid == "pick1":
                 self.pick_color_worker("color1")
             elif bid == "pick2":
@@ -443,67 +431,6 @@ class WallpaperGenApp(App):
     def set_mesh_mode(self) -> None:
         """Helper to set mesh mode safely."""
         self.query_one("#mode_mesh").value = True
-
-    @work(exclusive=True, thread=True)
-    def generate_ai(self):
-        # Must access UI elements via call_from_thread or query before work starts?
-        # Textual queries are thread-safeish for reading usually, but better to read via worker if possible.
-        # However, accessing `self.query_one` inside a worker IS allowed for reading properties in many cases,
-        # but standard practice is to read data *before* or pass it in.
-        # But `generate_ai` is triggered by button, so we need to read the prompt inside here.
-
-        # Safe pattern: Schedule a function to read the prompt, but that's async.
-        # Simpler: Reading values from main thread widgets inside a worker is generally safe in Textual
-        # as long as we don't write. Let's try reading.
-
-        # Actually, let's read the prompt via app.call_from_thread if we want to be 100% strict,
-        # but checking docs, reading widget properties is often fine.
-        # For safety, I'll access it directly. If it fails, I'll wrap it.
-
-        # Wait, if I read `self.query_one("#ai_prompt").value`, it might be fine.
-
-        try:
-            # We need to get the prompt.
-            # Note: `self.query_one` is thread-safe.
-            prompt = self.query_one("#ai_prompt").value
-
-            if not prompt:
-                self.write_log("Please enter a prompt for AI generation.")
-                return
-
-            self.write_log(
-                f"AI Generating for '{prompt}'...\n(This might take a while on first run)"
-            )
-            self._suppress_fd_output(kitchn_bridge.log_tui_ai_start, prompt)
-
-            # 1. Generate Image
-            # We save to a temporary location
-            ai_image_path = "ai_generated_temp.png"
-            path = ai_generator.generate_image_from_prompt(prompt, ai_image_path)
-
-            if not path:
-                self.write_log("Error: AI Model failed to load or run.")
-                self._suppress_fd_output(kitchn_bridge.log_tui_fail, "AI Model failed")
-                return
-
-            self.write_log("Image generated! Extracting colors...")
-
-            # 2. Extract Colors
-            colors = ai_generator.extract_palette(path, n_colors=3)
-            self.write_log(f"Colors found: {colors}")
-
-            # 3. Update UI
-            self.call_from_thread(self.update_ui_colors, colors)
-            self.call_from_thread(self.set_mesh_mode)
-
-            self.write_log(
-                "UI updated! Click 'Generate Wallpapers' to render final output."
-            )
-            self._suppress_fd_output(kitchn_bridge.log_tui_ai_ok)
-
-        except Exception as e:
-            self.write_log(f"AI Error: {str(e)}")
-            self._suppress_fd_output(kitchn_bridge.log_tui_fail, str(e))
 
     @work(exclusive=True, thread=True)
     def generate(self):
@@ -615,6 +542,11 @@ class WallpaperGenApp(App):
             self._suppress_fd_output(kitchn_bridge.log_tui_fail, str(e))
 
 
-if __name__ == "__main__":
+def main():
+    """Entry point for pipx installation"""
     app = WallpaperGenApp()
     app.run()
+
+
+if __name__ == "__main__":
+    main()

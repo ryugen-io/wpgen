@@ -43,3 +43,8 @@ build/
 dist/
 *.spec
 .build-venv/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/

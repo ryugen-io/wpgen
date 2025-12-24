@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wpgen"
+version = "1.0.0"
+description = "Wallpaper Generator TUI with gradient generation"
+requires-python = ">=3.8"
+dependencies = [
+    "textual",
+    "pillow",
+    "numpy",
+    "scipy",
+    "requests",
+    "scikit-learn",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff",
+    "mypy",
+]
+
+[project.scripts]
+wpgen = "wpgen.tui:main"
