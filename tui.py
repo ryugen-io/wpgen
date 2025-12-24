@@ -155,8 +155,15 @@ class WallpaperGenApp(App):
     }
     """
 
-    TITLE = "WP-Gen-PyJS"
+    TITLE = "wpgen"
     SUB_TITLE = "Fancy Wallpaper Generator"
+
+    def get_theme_variable_defaults(self) -> dict[str, str]:
+        """Override theme variables with Kitchn theme if available."""
+        if HAS_THEME:
+            # Return variables with $ prefix as required by Textual
+            return {f"${key}": value for key, value in tui_theme_config.CSS_VARIABLES.items()}
+        return {}
 
     def compose(self) -> ComposeResult:
         with Container(id="sidebar"):
@@ -327,11 +334,8 @@ class WallpaperGenApp(App):
         self.query_one("#status_log").write("Ready to generate...")
         self._suppress_fd_output(kitchn_bridge.log_tui_start)
 
-        # Apply Kitchn Theme if available
+        # Theme is applied via get_theme_variable_defaults
         if HAS_THEME:
-            for key, value in tui_theme_config.CSS_VARIABLES.items():
-                # Textual uses variable names without '$' in set_variable
-                self.screen.styles.set_variable(key, value)
             self._suppress_fd_output(kitchn_bridge.log_tui_theme_ok)
 
         self._suppress_fd_output(kitchn_bridge.log_tui_ok)
