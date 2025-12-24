@@ -83,7 +83,8 @@ def create_mesh_gradient(
     img = Image.new("RGB", (width, height), base_color)
 
     # We need a robust blur, so we draw on a smaller canvas and upscale for speed + smoothness
-    scale_factor = 0.1
+    # Increased scale_factor from 0.1 to 0.3 for better quality
+    scale_factor = 0.3
     small_w, small_h = int(width * scale_factor), int(height * scale_factor)
     small_img = Image.new("RGB", (small_w, small_h), base_color)
     small_draw = ImageDraw.Draw(small_img)
@@ -238,12 +239,21 @@ def generate_wallpaper(config):
         'logo_path': 'path/to/logo.png' | None,
         'position': 'center',
         'noise': 0.05,
-        'output_dir': '.'
+        'output_dir': '.',
+        'seed': int | None  # Optional: for reproducible randomness
     }
     """
     resolutions = [(1920, 1080), (2560, 1440), (1920, 1200)]
 
+    # Use a fixed seed for consistent randomness across all resolutions
+    # User can override with config['seed'] if desired
+    seed = config.get("seed", 42)
+
     for width, height in resolutions:
+        # Reset random state before each resolution to ensure identical patterns
+        random.seed(seed)
+        np.random.seed(seed)
+
         mode = config.get("mode", "solid")
         colors = config.get("colors", ["#000000"])
 
@@ -298,6 +308,7 @@ def generate_wallpaper(config):
         os.makedirs(output_dir, exist_ok=True)
         filename = os.path.join(output_dir, f"wallpaper_{width}x{height}.png")
         img.save(filename)
+        # Output handled by TUI
         # Output handled by TUI
 
 

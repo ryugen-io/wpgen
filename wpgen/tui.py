@@ -14,16 +14,28 @@ from textual.widgets import (
 from textual.validation import Regex
 from textual.theme import Theme
 import os
+import sys
 import subprocess
+from pathlib import Path
 from wpgen import generator, kitchn_bridge
 
-try:
-    from wpgen import tui_theme_config
+# Try to load theme config from XDG config directory
+HAS_THEME = False
+tui_theme_config = None
+config_path = Path.home() / ".config" / "wpgen"
+if (config_path / "tui_theme_config.py").exists():
+    sys.path.insert(0, str(config_path))
+    try:
+        import tui_theme_config
+        HAS_THEME = True
+    except ImportError:
+        pass
+    finally:
+        sys.path.pop(0)
 
-    HAS_THEME = True
-except ImportError:
-    HAS_THEME = False
-    print("Warning: tui_theme_config not found. Using default Textual theme.")
+if not HAS_THEME:
+    print("Warning: tui_theme_config not found in ~/.config/wpgen/")
+    print("Run: kitchn stock wp-gen-tui.ing")
 
 
 class WallpaperGenApp(App):

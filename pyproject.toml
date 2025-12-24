@@ -24,3 +24,7 @@ dev = [
 
 [project.scripts]
 wpgen = "wpgen.tui:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["wpgen*"]
