@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Claude & Serena
+.claude/
+.serena/
+
+# Mypy & Ruff
+.mypy_cache/
+.ruff_cache/
+
+# Generated wallpapers
+*.png
+*.jpg
+*.jpeg
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+wp-gen-pyjs/
