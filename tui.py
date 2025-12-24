@@ -212,6 +212,46 @@ class WallpaperGenApp(App):
                 )
                 yield Button("🎨", id="pick3", classes="btn-small")
 
+            # Gradient Direction (for linear gradients)
+            with Container(id="gradient_options"):
+                yield Label("Gradient Direction", classes="section-title")
+                yield Select.from_values(
+                    [
+                        "vertical",
+                        "horizontal",
+                        "diagonal_tl_br",
+                        "diagonal_tr_bl",
+                        "radial",
+                    ],
+                    value="vertical",
+                    id="gradient_direction",
+                )
+
+            # Mesh Options (for mesh gradients)
+            with Container(id="mesh_options"):
+                yield Label("Mesh Settings", classes="section-title")
+
+                with Horizontal(classes="effect-row"):
+                    yield Label("Blob Count: ", classes="effect-label")
+                    yield Input(
+                        placeholder="6", id="mesh_blob_count", classes="effect-input"
+                    )
+
+                with Horizontal(classes="effect-row"):
+                    yield Label("Blur Intensity: ", classes="effect-label")
+                    yield Input(
+                        placeholder="1.0",
+                        id="mesh_blur_intensity",
+                        classes="effect-input",
+                    )
+
+                yield Label("Blob Size", classes="section-title")
+                yield Select.from_values(
+                    ["small", "medium", "large"],
+                    value="medium",
+                    id="mesh_blob_size",
+                )
+
             with Horizontal(classes="toggle-row"):
                 yield Label("Enable Logo: ", classes="section-title")
                 yield Switch(value=False, id="logo_switch")
@@ -299,6 +339,9 @@ class WallpaperGenApp(App):
         # Initial state for solid mode
         self.query_one("#row_color2").display = False
         self.query_one("#row_color3").display = False
+        # Initial state for gradient/mesh options
+        self.query_one("#gradient_options").display = False
+        self.query_one("#mesh_options").display = False
         # Initial state for logo
         self.query_one("#logo_section").display = False
         # Initial state for AI (disabled by default)
@@ -311,21 +354,29 @@ class WallpaperGenApp(App):
             self.query_one("#logo_section").display = event.value
 
     def on_radio_set_changed(self, event: RadioSet.Changed) -> None:
-        # Show/Hide color inputs based on mode
+        # Show/Hide color inputs and options based on mode
         mode = event.pressed.id
         # We toggle the ROWS now
         r2 = self.query_one("#row_color2")
         r3 = self.query_one("#row_color3")
+        grad_opts = self.query_one("#gradient_options")
+        mesh_opts = self.query_one("#mesh_options")
 
         if mode == "mode_solid":
             r2.display = False
             r3.display = False
+            grad_opts.display = False
+            mesh_opts.display = False
         elif mode == "mode_linear":
             r2.display = True
             r3.display = False
+            grad_opts.display = True
+            mesh_opts.display = False
         elif mode == "mode_mesh":
             r2.display = True
             r3.display = True
+            grad_opts.display = False
+            mesh_opts.display = True
 
     @work(exclusive=False, thread=True)
     def pick_color_worker(self, target_input_id: str) -> None:
@@ -515,6 +566,20 @@ class WallpaperGenApp(App):
             saturation = parse_float(self.query_one("#saturation_input").value, 1.0)
             sharpness = parse_float(self.query_one("#sharpness_input").value, 1.0)
 
+            # Read gradient/mesh options
+            gradient_direction = self.query_one("#gradient_direction").value
+            mesh_blob_count = self.query_one("#mesh_blob_count").value
+            mesh_blur_intensity = parse_float(
+                self.query_one("#mesh_blur_intensity").value, 1.0
+            )
+            mesh_blob_size = self.query_one("#mesh_blob_size").value
+
+            # Parse blob count as int
+            try:
+                mesh_blob_count = int(mesh_blob_count) if mesh_blob_count else None
+            except ValueError:
+                mesh_blob_count = None
+
             config = {
                 "mode": mode,
                 "colors": colors,
@@ -527,6 +592,10 @@ class WallpaperGenApp(App):
                 "saturation": saturation,
                 "sharpness": sharpness,
                 "output_dir": output_dir,
+                "gradient_direction": gradient_direction,
+                "mesh_blob_count": mesh_blob_count,
+                "mesh_blur_intensity": mesh_blur_intensity,
+                "mesh_blob_size": mesh_blob_size,
             }
 
             self.write_log(f"Mode: {mode}\nColors: {colors}\nProcessing...")

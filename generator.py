@@ -20,22 +20,64 @@ def create_linear_gradient(width, height, start_color, end_color, direction="ver
     mask_data = []
 
     if direction == "vertical":
+        # Top to bottom
         for y in range(height):
             mask_data.extend([int(255 * (y / height))] * width)
-    else:  # horizontal
+    elif direction == "horizontal":
+        # Left to right
         for y in range(height):
             row = [int(255 * (x / width)) for x in range(width)]
             mask_data.extend(row)
+    elif direction == "diagonal_tl_br":
+        # Top-left to bottom-right
+        for y in range(height):
+            row = []
+            for x in range(width):
+                # Distance along diagonal (0 to 1)
+                progress = (x / width + y / height) / 2
+                row.append(int(255 * progress))
+            mask_data.extend(row)
+    elif direction == "diagonal_tr_bl":
+        # Top-right to bottom-left
+        for y in range(height):
+            row = []
+            for x in range(width):
+                progress = ((width - x) / width + y / height) / 2
+                row.append(int(255 * progress))
+            mask_data.extend(row)
+    elif direction == "radial":
+        # Radial from center
+        center_x, center_y = width // 2, height // 2
+        max_dist = ((width / 2) ** 2 + (height / 2) ** 2) ** 0.5
+        for y in range(height):
+            row = []
+            for x in range(width):
+                dist = ((x - center_x) ** 2 + (y - center_y) ** 2) ** 0.5
+                progress = min(dist / max_dist, 1.0)
+                row.append(int(255 * progress))
+            mask_data.extend(row)
+    else:
+        # Default to vertical
+        for y in range(height):
+            mask_data.extend([int(255 * (y / height))] * width)
 
     mask.putdata(mask_data)
     base.paste(top, (0, 0), mask)
     return base
 
 
-def create_mesh_gradient(width, height, colors):
+def create_mesh_gradient(
+    width, height, colors, blob_count=None, blur_intensity=1.0, blob_size="medium"
+):
     """
     Creates a trendy mesh/aurora gradient by placing large blurred orbs.
-    colors: list of hex strings
+
+    Args:
+        width, height: Image dimensions
+        colors: list of hex strings
+        blob_count: Number of blobs (default: len(colors) * 2)
+        blur_intensity: Blur strength 0.1-2.0 (default: 1.0)
+        blob_size: 'small', 'medium', 'large' (default: 'medium')
     """
     base_color = hex_to_rgb(colors[0])
     img = Image.new("RGB", (width, height), base_color)
@@ -48,19 +90,33 @@ def create_mesh_gradient(width, height, colors):
 
     rgb_colors = [hex_to_rgb(c) for c in colors]
 
+    # Blob count: default to 2x color count for nice coverage
+    if blob_count is None:
+        blob_count = len(rgb_colors) * 2
+
+    # Blob size ranges
+    size_ranges = {
+        "small": (small_w // 6, small_w // 2),
+        "medium": (small_w // 3, small_w),
+        "large": (small_w // 2, int(small_w * 1.5)),
+    }
+    min_radius, max_radius = size_ranges.get(blob_size, size_ranges["medium"])
+
     # Draw random large circles
-    for i in range(len(rgb_colors)):
-        color = rgb_colors[i]
-        # Random position
+    for i in range(blob_count):
+        color = rgb_colors[i % len(rgb_colors)]
+        # Random position (can be off-screen for edge blobs)
         x = random.randint(-small_w // 2, small_w + small_w // 2)
         y = random.randint(-small_h // 2, small_h + small_h // 2)
         # Random size
-        radius = random.randint(small_w // 3, small_w)
+        radius = random.randint(min_radius, max_radius)
 
         small_draw.ellipse((x - radius, y - radius, x + radius, y + radius), fill=color)
 
-    # Heavy blur on the small image
-    small_img = small_img.filter(ImageFilter.GaussianBlur(radius=small_w // 4))
+    # Apply blur with configurable intensity
+    blur_radius = int((small_w // 4) * blur_intensity)
+    blur_radius = max(1, blur_radius)  # Ensure at least 1
+    small_img = small_img.filter(ImageFilter.GaussianBlur(radius=blur_radius))
 
     # Resize back up
     img = small_img.resize((width, height), Image.Resampling.BICUBIC)
@@ -196,9 +252,15 @@ def generate_wallpaper(config):
         elif mode == "gradient_linear":
             c1 = colors[0]
             c2 = colors[1] if len(colors) > 1 else colors[0]
-            img = create_linear_gradient(width, height, c1, c2)
+            direction = config.get("gradient_direction", "vertical")
+            img = create_linear_gradient(width, height, c1, c2, direction)
         elif mode == "gradient_mesh":
-            img = create_mesh_gradient(width, height, colors)
+            blob_count = config.get("mesh_blob_count")
+            blur_intensity = config.get("mesh_blur_intensity", 1.0)
+            blob_size = config.get("mesh_blob_size", "medium")
+            img = create_mesh_gradient(
+                width, height, colors, blob_count, blur_intensity, blob_size
+            )
 
         # Apply effects
         noise_level = config.get("noise", 0)
