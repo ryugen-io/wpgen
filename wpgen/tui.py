@@ -274,6 +274,12 @@ class WallpaperGenApp(App):
                 id="output_dir",
             )
 
+            yield Label("Random Seed (optional)", classes="section-title")
+            yield Input(
+                placeholder="42 (default)",
+                id="seed_input",
+            )
+
             yield Label("Effects", classes="section-title")
 
             with Horizontal(classes="effect-row"):
@@ -523,6 +529,15 @@ class WallpaperGenApp(App):
             except ValueError:
                 mesh_blob_count = None
 
+            # Parse seed as int (optional)
+            seed_value = self.query_one("#seed_input").value
+            seed = None
+            if seed_value:
+                try:
+                    seed = int(seed_value)
+                except ValueError:
+                    seed = None  # Use default from generator
+
             config = {
                 "mode": mode,
                 "colors": colors,
@@ -539,6 +554,7 @@ class WallpaperGenApp(App):
                 "mesh_blob_count": mesh_blob_count,
                 "mesh_blur_intensity": mesh_blur_intensity,
                 "mesh_blob_size": mesh_blob_size,
+                "seed": seed,
             }
 
             self.write_log(f"Mode: {mode}\nColors: {colors}\nProcessing...")
