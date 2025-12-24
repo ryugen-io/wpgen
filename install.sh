@@ -28,12 +28,12 @@ echo -e "${GREEN}Creating directories...${NC}"
 mkdir -p "$DEPLOY_DIR"
 mkdir -p "$BIN_DIR"
 
-# Create symlinks for Python files
-echo -e "${GREEN}Creating symlinks...${NC}"
+# Copy Python files
+echo -e "${GREEN}Copying Python files...${NC}"
 for file in ai_generator.py generate_examples.py generator.py kitchn_bridge.py tui.py; do
     if [ -f "$PROJECT_DIR/$file" ]; then
-        ln -sf "$PROJECT_DIR/$file" "$DEPLOY_DIR/$file"
-        echo "  Linked: $file"
+        cp "$PROJECT_DIR/$file" "$DEPLOY_DIR/$file"
+        echo "  Copied: $file"
     fi
 done
 
