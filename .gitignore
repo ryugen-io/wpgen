@@ -37,3 +37,9 @@ Thumbs.db
 
 # Project specific
 wp-gen-pyjs/
+
+# PyInstaller
+build/
+dist/
+*.spec
+.build-venv/

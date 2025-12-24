@@ -10,3 +10,4 @@ transformers
 accelerate
 torch
 scikit-learn
+pyinstaller
