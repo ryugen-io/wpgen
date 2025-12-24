@@ -137,6 +137,22 @@ class WallpaperGenApp(App):
     Select {
         margin-bottom: 1;
     }
+
+    .effect-row {
+        height: 3;
+        margin-bottom: 0;
+    }
+
+    .effect-label {
+        width: 50%;
+        content-align: right middle;
+        padding-right: 1;
+    }
+
+    .effect-input {
+        width: 50%;
+        margin-bottom: 0;
+    }
     """
 
     TITLE = "WP-Gen-PyJS"
@@ -226,9 +242,40 @@ class WallpaperGenApp(App):
             )
 
             yield Label("Effects", classes="section-title")
-            with Horizontal():
-                yield Label("Noise/Grain: ")
-                yield Switch(value=False, id="noise_switch")
+
+            with Horizontal(classes="effect-row"):
+                yield Label("Noise (0.0-0.2): ", classes="effect-label")
+                yield Input(
+                    placeholder="0.05", id="noise_input", classes="effect-input"
+                )
+
+            with Horizontal(classes="effect-row"):
+                yield Label("Blur (0-10): ", classes="effect-label")
+                yield Input(placeholder="0", id="blur_input", classes="effect-input")
+
+            with Horizontal(classes="effect-row"):
+                yield Label("Brightness (0.5-2.0): ", classes="effect-label")
+                yield Input(
+                    placeholder="1.0", id="brightness_input", classes="effect-input"
+                )
+
+            with Horizontal(classes="effect-row"):
+                yield Label("Contrast (0.5-2.0): ", classes="effect-label")
+                yield Input(
+                    placeholder="1.0", id="contrast_input", classes="effect-input"
+                )
+
+            with Horizontal(classes="effect-row"):
+                yield Label("Saturation (0.0-2.0): ", classes="effect-label")
+                yield Input(
+                    placeholder="1.0", id="saturation_input", classes="effect-input"
+                )
+
+            with Horizontal(classes="effect-row"):
+                yield Label("Sharpness (0.0-2.0): ", classes="effect-label")
+                yield Input(
+                    placeholder="1.0", id="sharpness_input", classes="effect-input"
+                )
 
             yield Button("Generate Wallpapers", variant="primary", id="gen_btn")
 
@@ -449,19 +496,36 @@ class WallpaperGenApp(App):
                 final_logo_path = logo_path
 
             position = self.query_one("#pos_select").value
-            noise_enabled = self.query_one("#noise_switch").value
-            noise_level = 0.05 if noise_enabled else 0.0
 
             output_dir = self.query_one("#output_dir").value.strip()
             if not output_dir:
                 output_dir = "."
+
+            # Read effect values from inputs
+            def parse_float(value, default):
+                try:
+                    return float(value) if value else default
+                except ValueError:
+                    return default
+
+            noise = parse_float(self.query_one("#noise_input").value, 0.0)
+            blur = parse_float(self.query_one("#blur_input").value, 0.0)
+            brightness = parse_float(self.query_one("#brightness_input").value, 1.0)
+            contrast = parse_float(self.query_one("#contrast_input").value, 1.0)
+            saturation = parse_float(self.query_one("#saturation_input").value, 1.0)
+            sharpness = parse_float(self.query_one("#sharpness_input").value, 1.0)
 
             config = {
                 "mode": mode,
                 "colors": colors,
                 "logo_path": final_logo_path,
                 "position": position,
-                "noise": noise_level,
+                "noise": noise,
+                "blur": blur,
+                "brightness": brightness,
+                "contrast": contrast,
+                "saturation": saturation,
+                "sharpness": sharpness,
                 "output_dir": output_dir,
             }
 

@@ -1,6 +1,6 @@
 import random
 import os
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageDraw, ImageFilter, ImageEnhance
 import numpy as np
 
 
@@ -89,6 +89,45 @@ def apply_noise(image, intensity=0.05):
     return Image.fromarray(noisy_img_arr)
 
 
+def apply_blur(image, radius=0):
+    """Apply Gaussian blur to image."""
+    if radius <= 0:
+        return image
+    return image.filter(ImageFilter.GaussianBlur(radius=radius))
+
+
+def apply_brightness(image, factor=1.0):
+    """Adjust image brightness. 1.0 = original, 0.0 = black, 2.0 = very bright."""
+    if factor == 1.0:
+        return image
+    enhancer = ImageEnhance.Brightness(image)
+    return enhancer.enhance(factor)
+
+
+def apply_contrast(image, factor=1.0):
+    """Adjust image contrast. 1.0 = original, 0.0 = gray, 2.0 = high contrast."""
+    if factor == 1.0:
+        return image
+    enhancer = ImageEnhance.Contrast(image)
+    return enhancer.enhance(factor)
+
+
+def apply_saturation(image, factor=1.0):
+    """Adjust color saturation. 1.0 = original, 0.0 = grayscale, 2.0 = very saturated."""
+    if factor == 1.0:
+        return image
+    enhancer = ImageEnhance.Color(image)
+    return enhancer.enhance(factor)
+
+
+def apply_sharpness(image, factor=1.0):
+    """Adjust image sharpness. 1.0 = original, 0.0 = blurred, 2.0 = very sharp."""
+    if factor == 1.0:
+        return image
+    enhancer = ImageEnhance.Sharpness(image)
+    return enhancer.enhance(factor)
+
+
 def composite_logo(background, logo_path, position, scale=1.0):
     try:
         logo = Image.open(logo_path).convert("RGBA")
@@ -161,10 +200,30 @@ def generate_wallpaper(config):
         elif mode == "gradient_mesh":
             img = create_mesh_gradient(width, height, colors)
 
-        # Apply noise
+        # Apply effects
         noise_level = config.get("noise", 0)
         if noise_level > 0:
             img = apply_noise(img, noise_level)
+
+        blur_radius = config.get("blur", 0)
+        if blur_radius > 0:
+            img = apply_blur(img, blur_radius)
+
+        brightness = config.get("brightness", 1.0)
+        if brightness != 1.0:
+            img = apply_brightness(img, brightness)
+
+        contrast = config.get("contrast", 1.0)
+        if contrast != 1.0:
+            img = apply_contrast(img, contrast)
+
+        saturation = config.get("saturation", 1.0)
+        if saturation != 1.0:
+            img = apply_saturation(img, saturation)
+
+        sharpness = config.get("sharpness", 1.0)
+        if sharpness != 1.0:
+            img = apply_sharpness(img, sharpness)
 
         # Composite Logo
         logo_path = config.get("logo_path")
