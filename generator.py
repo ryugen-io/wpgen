@@ -185,7 +185,7 @@ def generate_wallpaper(config):
         'output_dir': '.'
     }
     """
-    resolutions = [(1920, 1080), (2560, 1440)]
+    resolutions = [(1920, 1080), (2560, 1440), (1920, 1200)]
 
     for width, height in resolutions:
         mode = config.get("mode", "solid")
