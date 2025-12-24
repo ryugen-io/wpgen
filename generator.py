@@ -1,4 +1,5 @@
 import random
+import os
 from PIL import Image, ImageDraw, ImageFilter
 import numpy as np
 
@@ -172,7 +173,9 @@ def generate_wallpaper(config):
             img = composite_logo(img, logo_path, pos)
 
         # Save
-        filename = f"wallpaper_{width}x{height}.png"
+        output_dir = config.get("output_dir", ".")
+        os.makedirs(output_dir, exist_ok=True)
+        filename = os.path.join(output_dir, f"wallpaper_{width}x{height}.png")
         img.save(filename)
         # Output handled by TUI
 

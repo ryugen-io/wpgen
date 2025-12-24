@@ -214,6 +214,12 @@ class WallpaperGenApp(App):
                     id="pos_select",
                 )
 
+            yield Label("Output Directory", classes="section-title")
+            yield Input(
+                placeholder="Leave empty for current directory",
+                id="output_dir",
+            )
+
             yield Label("Effects", classes="section-title")
             with Horizontal():
                 yield Label("Noise/Grain: ")
@@ -443,12 +449,17 @@ class WallpaperGenApp(App):
             noise_enabled = self.query_one("#noise_switch").value
             noise_level = 0.05 if noise_enabled else 0.0
 
+            output_dir = self.query_one("#output_dir").value.strip()
+            if not output_dir:
+                output_dir = "."
+
             config = {
                 "mode": mode,
                 "colors": colors,
                 "logo_path": final_logo_path,
                 "position": position,
                 "noise": noise_level,
+                "output_dir": output_dir,
             }
 
             self.write_log(f"Mode: {mode}\nColors: {colors}\nProcessing...")
