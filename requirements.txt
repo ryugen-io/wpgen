@@ -5,9 +5,4 @@ scipy
 ruff
 mypy
 requests
-diffusers
-transformers
-accelerate
-torch
 scikit-learn
-pyinstaller
