@@ -126,8 +126,26 @@ class WallpaperGenApp(App):
     .btn-small {
         width: 20%;
         min-width: 4;
-        margin-top: 0; 
+        margin-top: 0;
         height: 100%;
+    }
+
+    #logo_section {
+        margin-bottom: 0;
+    }
+
+    #logo_section .section-title {
+        margin-top: 0;
+        margin-bottom: 0;
+    }
+
+    #logo_section Input {
+        margin-bottom: 0;
+    }
+
+    #pos_select {
+        margin-bottom: 1;
+        height: 3;
     }
     """
 
